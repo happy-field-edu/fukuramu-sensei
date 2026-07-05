@@ -7,7 +7,7 @@
 
 ## 🎮 遊んでみる
 
-👉 **[ここをタップして遊ぶ](https://kokikf0501-bot.github.io/fukuramu-sensei/)**
+👉 **[ここをタップして遊ぶ](https://happy-field-edu.github.io/fukuramu-sensei/)**
 
 （タブレットのブラウザ推奨。ネット接続がなくても、一度開けば動きます）
 
