@@ -1,0 +1,8 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# secrets (念のため)
+.env
+.env.*
+!.env.example
