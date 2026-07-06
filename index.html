@@ -106,6 +106,25 @@
   .masu.ok { background:#e0f5d8; border:2px solid #6bb56b; color:#e0563f; font-weight:bold; }
   .masu .tr { position:absolute; top:2px; right:4px; font-size:0.8em; }
   .masu .rot { transform:rotate(90deg); display:inline-block; }
+  .masu .kgo { position:absolute; top:1px; right:2px; transform:rotate(90deg); }
+  .masu .kgc { position:absolute; bottom:1px; left:2px; transform:rotate(90deg); }
+
+  /* --- ますの中の位置あてクイズ --- */
+  .pos-masu {
+    position:relative; width:170px; height:170px; margin:12px auto;
+    background:#fff; border:3px solid #7a9db8; border-radius:4px;
+  }
+  .pos-masu .gh { position:absolute; left:0; right:0; top:50%; border-top:2px dashed #d8e2ea; }
+  .pos-masu .gv { position:absolute; top:0; bottom:0; left:50%; border-left:2px dashed #d8e2ea; }
+  .pos-q { position:absolute; width:50%; height:50%; background:transparent; border:none; }
+  .pos-q::after {
+    content:""; position:absolute; inset:16px;
+    border:3px dashed #e0cfa8; border-radius:50%; opacity:.75;
+  }
+  .pos-q:active { background:#fff3d0; }
+  .pos-q.tl { left:0; top:0; }  .pos-q.tr { right:0; top:0; }
+  .pos-q.bl { left:0; bottom:0; } .pos-q.br { right:0; bottom:0; }
+  .pos-sym { position:absolute; font-size:46px; font-weight:bold; color:#e0563f; line-height:1; }
   .sym-tray { display:flex; justify-content:center; gap:14px; margin:14px 0 6px; }
   .sym-btn {
     width:66px; height:66px; font-size:30px; font-family:inherit; font-weight:bold;
@@ -325,10 +344,24 @@ const m1Questions = [
     praise: `${R("文","ぶん")}の おわりが よく わかったね！`
   },
   {
+    type: "pos", sym: "。", ans: "tr",
+    rule: `たてがきでは、きごうを かく ますの <b>ばしょ</b>も きまって いるよ。`,
+    prompt: `${R("丸","まる")}（。）は、ますの <b>どこ</b>に かく？`,
+    strip: ["で","す",null],
+    praise: `。は、ますの <b>みぎうえ</b>に かくよ！`
+  },
+  {
     rule: `<b>${R("点","てん")}（、）</b>は、${R("文","ぶん")}の ${R("中","なか")}の ${R("切","き")}れ${R("目","め")}に つけます。`,
     parts: ["きのう","ぼくは","どうぶつえんへ","いきました。"],
     placements: [ {sym:"、", pos:1} ],
     praise: "「きのう、」で ひとやすみ。よみやすく なったね！"
+  },
+  {
+    type: "pos", sym: "、", ans: "tr",
+    rule: `${R("点","てん")}（、）を かく ばしょは、${R("丸","まる")}（。）と <b>おなじ</b>だよ。`,
+    prompt: `${R("点","てん")}（、）は、ますの <b>どこ</b>に かく？`,
+    strip: ["き","の","う",null],
+    praise: `、も ますの <b>みぎうえ</b>！ 。と おなじだね。`
   },
   {
     rule: `<b>${R("点","てん")}（、）</b>が あると、${R("文","ぶん")}が よみやすく なるね。`,
@@ -341,6 +374,20 @@ const m1Questions = [
     parts: ["おかあさんが、","おはよう","と いいました。"],
     placements: [ {sym:"「", pos:1}, {sym:"」", pos:2} ],
     praise: "はなした ことばが 「」で はっきり したね！"
+  },
+  {
+    type: "pos", sym: "「", ans: "tr",
+    rule: `はじめの かぎ（「）は、かきはじめの かどに そって かくよ。`,
+    prompt: `はじめの かぎ（「）は、どこから かきはじめる？`,
+    strip: [null,"お","は","よ"],
+    praise: `はじめの かぎは、ますの <b>みぎうえ</b>から かくよ！`
+  },
+  {
+    type: "pos", sym: "」", ans: "bl",
+    rule: `おわりの かぎ（」）は、はじめの かぎと <b>はんたい</b>の ばしょだよ。`,
+    prompt: `おわりの かぎ（」）は、ますの <b>どこ</b>に かく？`,
+    strip: ["す","よ","。",null],
+    praise: `おわりの かぎは、ますの <b>ひだりした</b>に かくよ！`
   },
   {
     rule: `さいごの もんだい！ <b>。、「」</b> ぜんぶ つかうよ。`,
@@ -389,6 +436,7 @@ function startM1Kihon(){
 }
 function renderMode1(){
   const q = m1Questions[m1.qIdx];
+  if(q.type === "pos"){ renderM1Pos(q); return; }
   const cur = q.placements[m1.pIdx];
   let sentence = "";
   for(let gap=0; gap<=q.parts.length; gap++){
@@ -427,18 +475,61 @@ function m1Tap(gap){
     el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
   }
 }
+function renderM1Pos(q){
+  const strip = q.strip.map(ch => ch
+    ? `<div class="masu">${decoChar(ch)}</div>`
+    : `<div class="masu blank"></div>`).join("");
+  app.innerHTML = `
+    ${topBar()}
+    <div class="rule-tip">💡 ${q.rule}</div>
+    <div class="card center">
+      <p class="q-text">${q.prompt}</p>
+      <div class="masu-wrap" style="padding:4px;"><div class="masu-col">${strip}</div></div>
+      <p style="font-size:18px; color:#8a7b6c;">👇 おおきい ますの、かく ばしょを タップ！</p>
+      <div class="pos-masu" id="pos-masu">
+        <span class="gh"></span><span class="gv"></span>
+        <button class="pos-q tl" onclick="m1PosTap('tl')"></button>
+        <button class="pos-q tr" onclick="m1PosTap('tr')"></button>
+        <button class="pos-q bl" onclick="m1PosTap('bl')"></button>
+        <button class="pos-q br" onclick="m1PosTap('br')"></button>
+      </div>
+    </div>
+    <p class="center" style="color:#8a7b6c;">もんだい ${m1.qIdx+1} ／ ${m1Questions.length}</p>`;
+}
+function posSymbolHtml(sym, quad){
+  const pos = { tl:"top:8px;left:10px;", tr:"top:8px;right:10px;",
+                bl:"bottom:8px;left:10px;", br:"bottom:8px;right:10px;" }[quad];
+  const rot = (sym === "「" || sym === "」") ? "transform:rotate(90deg);" : "";
+  return `<span class="pos-sym" style="${pos}${rot}">${sym}</span>`;
+}
+function m1PosTap(quad){
+  const q = m1Questions[m1.qIdx];
+  if(quad === q.ans){
+    addStars(1); confetti(); renderM1Praise(q);
+  } else {
+    toast("うーん、そこじゃ ないみたい 🤔");
+    const el = document.getElementById("pos-masu");
+    el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+  }
+}
 function renderM1Praise(q){
-  let sentence = "";
-  for(let gap=0; gap<=q.parts.length; gap++){
-    if(m1.placedAt[gap]) sentence += `<span class="placed">${m1.placedAt[gap].join("")}</span>`;
-    if(gap < q.parts.length) sentence += `<span class="chunk">${q.parts[gap]}</span>`;
+  let body;
+  if(q.type === "pos"){
+    body = `<div class="pos-masu">${posSymbolHtml(q.sym, q.ans)}</div>`;
+  } else {
+    let sentence = "";
+    for(let gap=0; gap<=q.parts.length; gap++){
+      if(m1.placedAt[gap]) sentence += `<span class="placed">${m1.placedAt[gap].join("")}</span>`;
+      if(gap < q.parts.length) sentence += `<span class="chunk">${q.parts[gap]}</span>`;
+    }
+    body = `<div class="sentence-area">${sentence}</div>`;
   }
   const last = m1.qIdx >= m1Questions.length - 1;
   app.innerHTML = `
     ${topBar()}
     <div class="card center">
       <div style="font-size:50px;">🎉</div>
-      <div class="sentence-area">${sentence}</div>
+      ${body}
       <p style="font-size:23px;">${q.praise}</p>
       <p>⭐を 1こ ゲット！</p>
       <button class="next-btn" onclick="${last ? "m1Finish()" : "m1Next()"}">
@@ -525,7 +616,9 @@ function tenFinish(){ save.m1done.ten = true; persist(); renderM1Hub(); }
 /* --- ます目（たてがき）ユーティリティ --- */
 function decoChar(ch){
   if(ch === "、" || ch === "。") return `<span class="tr">${ch}</span>`;
-  if(ch === "「" || ch === "」" || ch === "ー") return `<span class="rot">${ch}</span>`;
+  if(ch === "「") return `<span class="kgo">${ch}</span>`;   // はじめのかぎ: ますの右上
+  if(ch === "」") return `<span class="kgc">${ch}</span>`;   // おわりのかぎ: ますの左下
+  if(ch === "ー") return `<span class="rot">${ch}</span>`;
   return ch || "";
 }
 function textToGrid(paras, rows){
